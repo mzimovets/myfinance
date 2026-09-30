@@ -25,7 +25,7 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+        sans: ['"Unbounded"', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         xl2: '1.25rem',
