@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Modal, ModalContent, ModalBody, ModalHeader, Input, Textarea, Button } from '@heroui/react'
+import { Modal, ModalContent, ModalBody, ModalHeader, Input, Textarea, Button, Select, SelectItem } from '@heroui/react'
 import { motion } from 'framer-motion'
 import { useAppData } from '../../context/AppDataContext'
 import type { Transaction, TransactionType } from '../../types'
-import { todayISO } from '../../utils/format'
+import { formatRub, todayISO } from '../../utils/format'
+import { suggestGoalAllocations } from '../../utils/insights'
 
 interface Props {
   isOpen: boolean
@@ -11,13 +12,26 @@ interface Props {
   editingTransaction?: Transaction | null
 }
 
+interface SplitPart {
+  id: string
+  categoryId: string | null
+  amount: string
+}
+
+function newPart(categoryId: string | null = null, amount = ''): SplitPart {
+  return { id: Math.random().toString(36).slice(2), categoryId, amount }
+}
+
 export default function AddTransactionModal({ isOpen, onClose, editingTransaction }: Props) {
-  const { categories, addTransaction, updateTransaction, deleteTransaction } = useAppData()
+  const { categories, goals, addTransaction, updateTransaction, deleteTransaction, updateGoal } = useAppData()
   const [type, setType] = useState<TransactionType>('expense')
   const [amount, setAmount] = useState('')
   const [categoryId, setCategoryId] = useState<string | null>(null)
   const [date, setDate] = useState(todayISO())
   const [description, setDescription] = useState('')
+  const [splitEnabled, setSplitEnabled] = useState(false)
+  const [parts, setParts] = useState<SplitPart[]>([newPart()])
+  const [goalAllocations, setGoalAllocations] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (isOpen) {
@@ -34,6 +48,9 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
         setDate(todayISO())
         setDescription('')
       }
+      setSplitEnabled(false)
+      setParts([newPart()])
+      setGoalAllocations({})
     }
   }, [isOpen, editingTransaction])
 
@@ -45,12 +62,54 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
     }
   }, [filteredCategories, categoryId])
 
+  useEffect(() => {
+    // reset split UI if switching to expense while editing not allowed / type changes
+    setParts((prev) => prev.map((p) => (p.categoryId && filteredCategories.some((c) => c.id === p.categoryId) ? p : { ...p, categoryId: null })))
+  }, [filteredCategories])
+
   const numericAmount = Number(amount.replace(',', '.'))
-  const canSave = numericAmount > 0 && !!categoryId && !!date
+  const partsTotal = parts.reduce((acc, p) => acc + (Number(p.amount.replace(',', '.')) || 0), 0)
+  const activeGoals = useMemo(() => goals.filter((g) => g.currentAmount < g.targetAmount), [goals])
+  const canSplit = type === 'income' && !editingTransaction
+  const totalForAllocation = splitEnabled ? partsTotal : numericAmount
+
+  const canSave = splitEnabled
+    ? parts.some((p) => p.categoryId && Number(p.amount.replace(',', '.')) > 0)
+    : numericAmount > 0 && !!categoryId && !!date
+
+  function updatePart(id: string, patch: Partial<SplitPart>) {
+    setParts((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)))
+  }
+
+  function addPartRow() {
+    setParts((prev) => [...prev, newPart()])
+  }
+
+  function removePartRow(id: string) {
+    setParts((prev) => (prev.length > 1 ? prev.filter((p) => p.id !== id) : prev))
+  }
+
+  function applyGoalSuggestions() {
+    if (totalForAllocation <= 0) return
+    const suggestions = suggestGoalAllocations(totalForAllocation, activeGoals)
+    const next: Record<string, string> = {}
+    for (const s of suggestions) next[s.goalId] = String(s.amount)
+    setGoalAllocations(next)
+  }
+
+  async function applyGoalAllocations() {
+    const entries = Object.entries(goalAllocations).filter(([, v]) => Number(v) > 0)
+    for (const [goalId, v] of entries) {
+      const goal = goals.find((g) => g.id === goalId)
+      if (!goal) continue
+      await updateGoal(goalId, { currentAmount: goal.currentAmount + Number(v) })
+    }
+  }
 
   async function handleSave() {
-    if (!canSave || !categoryId) return
+    if (!canSave) return
     if (editingTransaction) {
+      if (!categoryId) return
       await updateTransaction(editingTransaction.id, {
         type,
         amount: numericAmount,
@@ -58,7 +117,25 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
         date,
         description: description || undefined,
       })
+      onClose()
+      return
+    }
+
+    if (splitEnabled) {
+      const validParts = parts.filter((p) => p.categoryId && Number(p.amount.replace(',', '.')) > 0)
+      await Promise.all(
+        validParts.map((p) =>
+          addTransaction({
+            type,
+            amount: Number(p.amount.replace(',', '.')),
+            categoryId: p.categoryId!,
+            date,
+            description: description || undefined,
+          }),
+        ),
+      )
     } else {
+      if (!categoryId) return
       await addTransaction({
         type,
         amount: numericAmount,
@@ -67,6 +144,8 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
         description: description || undefined,
       })
     }
+
+    await applyGoalAllocations()
     onClose()
   }
 
@@ -103,34 +182,91 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
             ))}
           </div>
 
-          <div className="text-center py-3">
-            <input
-              autoFocus
-              inputMode="decimal"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^0-9.,]/g, ''))}
-              placeholder="0"
-              className="w-full text-center text-5xl font-bold bg-transparent outline-none placeholder:text-slate-300 dark:placeholder:text-white/15"
-            />
-            <div className="text-slate-400 text-sm mt-1">₽</div>
-          </div>
+          {canSplit && (
+            <button
+              onClick={() => setSplitEnabled((v) => !v)}
+              className={`self-start text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${
+                splitEnabled ? 'bg-brand-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-500'
+              }`}
+            >
+              🧩 Разделить на части
+            </button>
+          )}
 
-          <div className="grid grid-cols-4 gap-2">
-            {filteredCategories.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setCategoryId(c.id)}
-                className={`flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-all ${
-                  categoryId === c.id
-                    ? 'border-brand-500 bg-brand-500/10 scale-[1.03]'
-                    : 'border-transparent bg-slate-100 dark:bg-white/5'
-                }`}
-              >
-                <span className="text-xl">{c.icon}</span>
-                <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate w-full text-center px-1">{c.name}</span>
+          {!splitEnabled ? (
+            <>
+              <div className="text-center py-3">
+                <input
+                  autoFocus
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value.replace(/[^0-9.,]/g, ''))}
+                  placeholder="0"
+                  className="w-full text-center text-5xl font-bold bg-transparent outline-none placeholder:text-slate-300 dark:placeholder:text-white/15"
+                />
+                <div className="text-slate-400 text-sm mt-1">₽</div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2">
+                {filteredCategories.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setCategoryId(c.id)}
+                    className={`flex flex-col items-center gap-1 py-2.5 rounded-2xl border transition-all ${
+                      categoryId === c.id
+                        ? 'border-brand-500 bg-brand-500/10 scale-[1.03]'
+                        : 'border-transparent bg-slate-100 dark:bg-white/5'
+                    }`}
+                  >
+                    <span className="text-xl">{c.icon}</span>
+                    <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate w-full text-center px-1">{c.name}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {parts.map((p, i) => (
+                <div key={p.id} className="flex items-center gap-2">
+                  <Select
+                    aria-label="Категория"
+                    placeholder="Категория"
+                    selectedKeys={p.categoryId ? [p.categoryId] : []}
+                    onSelectionChange={(keys) => updatePart(p.id, { categoryId: (Array.from(keys)[0] as string) ?? null })}
+                    variant="bordered"
+                    className="flex-1"
+                  >
+                    {filteredCategories.map((c) => (
+                      <SelectItem key={c.id}>{`${c.icon} ${c.name}`}</SelectItem>
+                    ))}
+                  </Select>
+                  <Input
+                    aria-label="Сумма"
+                    placeholder="0 ₽"
+                    inputMode="decimal"
+                    value={p.amount}
+                    onChange={(e) => updatePart(p.id, { amount: e.target.value.replace(/[^0-9.,]/g, '') })}
+                    variant="bordered"
+                    className="w-28"
+                  />
+                  {parts.length > 1 && (
+                    <button onClick={() => removePartRow(p.id)} className="h-8 w-8 shrink-0 rounded-full text-slate-400 hover:bg-black/5 dark:hover:bg-white/5">
+                      ✕
+                    </button>
+                  )}
+                  {i === parts.length - 1 && parts.length < 8 && (
+                    <span className="sr-only">last</span>
+                  )}
+                </div>
+              ))}
+              <button onClick={addPartRow} className="self-start text-xs font-semibold text-brand-500 px-1 py-1">
+                + Добавить часть
               </button>
-            ))}
-          </div>
+              <div className="text-right text-sm text-slate-400">
+                Итого: <span className="font-semibold text-slate-700 dark:text-slate-200">{formatRub(partsTotal)}</span>
+              </div>
+            </div>
+          )}
 
           <Input
             type="date"
@@ -150,6 +286,35 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
             variant="bordered"
             minRows={1}
           />
+
+          {type === 'income' && !editingTransaction && activeGoals.length > 0 && totalForAllocation > 0 && (
+            <div className="rounded-2xl bg-slate-50 dark:bg-white/5 p-3 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold">Отложить в цели</span>
+                <button onClick={applyGoalSuggestions} className="text-xs font-semibold text-brand-500">
+                  🤖 Предложить
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-400 -mt-1">Сумма не влияет на доход — просто помечает часть денег как отложенную на цель.</p>
+              {activeGoals.map((g) => (
+                <div key={g.id} className="flex items-center gap-2">
+                  <span className="text-sm w-28 truncate shrink-0">
+                    {g.icon} {g.title}
+                  </span>
+                  <Input
+                    aria-label={`Отложить в ${g.title}`}
+                    placeholder="0 ₽"
+                    inputMode="decimal"
+                    value={goalAllocations[g.id] ?? ''}
+                    onChange={(e) => setGoalAllocations((prev) => ({ ...prev, [g.id]: e.target.value.replace(/[^0-9.,]/g, '') }))}
+                    variant="bordered"
+                    size="sm"
+                    className="flex-1"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="flex gap-2 pt-2">
             {editingTransaction && (

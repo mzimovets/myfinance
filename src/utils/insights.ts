@@ -164,6 +164,52 @@ export function forecastGoalDate(currentAmount: number, targetAmount: number, av
   return { monthsNeeded: months, etaLabel: label.charAt(0).toUpperCase() + label.slice(1) }
 }
 
+// ---------- Suggested goal allocations when splitting income ----------
+
+export interface GoalAllocationInput {
+  id: string
+  title: string
+  icon: string
+  color: string
+  currentAmount: number
+  targetAmount: number
+  deadline?: string
+}
+
+export interface SuggestedAllocation {
+  goalId: string
+  amount: number
+}
+
+const MAX_ALLOCATION_SHARE = 0.4 // never suggest putting away more than 40% of an income entry
+const FALLBACK_GOAL_SHARE = 0.1 // for goals without a deadline, suggest ~10% of what's left
+
+export function suggestGoalAllocations(totalAmount: number, goals: GoalAllocationInput[], now: Date = new Date()): SuggestedAllocation[] {
+  const active = goals.filter((g) => g.currentAmount < g.targetAmount)
+  if (active.length === 0 || totalAmount <= 0) return []
+
+  const raw = active.map((g) => {
+    const remaining = g.targetAmount - g.currentAmount
+    let monthlyNeed: number
+    if (g.deadline) {
+      const deadline = new Date(g.deadline + 'T00:00:00')
+      const months = Math.max(1, (deadline.getFullYear() - now.getFullYear()) * 12 + (deadline.getMonth() - now.getMonth()))
+      monthlyNeed = remaining / months
+    } else {
+      monthlyNeed = remaining * FALLBACK_GOAL_SHARE
+    }
+    return { goalId: g.id, amount: Math.min(monthlyNeed, remaining) }
+  })
+
+  const totalSuggested = raw.reduce((acc, r) => acc + r.amount, 0)
+  const cap = totalAmount * MAX_ALLOCATION_SHARE
+  const scale = totalSuggested > cap && totalSuggested > 0 ? cap / totalSuggested : 1
+
+  return raw
+    .map((r) => ({ goalId: r.goalId, amount: Math.round((r.amount * scale) / 10) * 10 }))
+    .filter((r) => r.amount > 0)
+}
+
 // ---------- Simple local Q&A engine (no LLM) ----------
 
 export interface QAResult {
