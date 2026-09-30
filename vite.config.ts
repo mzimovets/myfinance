@@ -4,14 +4,14 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/finance-diary/',
+  base: '/myfinance/',
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        id: '/finance-diary/',
+        id: '/myfinance/',
         name: 'Мои финансы — дневник и аналитика',
         short_name: 'Мои финансы',
         description: 'Личный финансовый дневник: доходы, расходы, цели и аналитика без сервера.',
@@ -19,8 +19,8 @@ export default defineConfig({
         background_color: '#f6f7fb',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/finance-diary/',
-        scope: '/finance-diary/',
+        start_url: '/myfinance/',
+        scope: '/myfinance/',
         lang: 'ru',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -31,7 +31,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
-        navigateFallback: '/finance-diary/index.html',
+        navigateFallback: '/myfinance/index.html',
       },
       devOptions: {
         enabled: false,
