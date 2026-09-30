@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { useAppData } from '../../context/AppDataContext'
 import type { Transaction, TransactionType } from '../../types'
 import { formatRub, todayISO } from '../../utils/format'
-import { suggestGoalAllocations } from '../../utils/insights'
+import { suggestGoalAllocations, suggestPiggyBankAllocations } from '../../utils/insights'
 
 interface Props {
   isOpen: boolean
@@ -23,7 +23,7 @@ function newPart(categoryId: string | null = null, amount = ''): SplitPart {
 }
 
 export default function AddTransactionModal({ isOpen, onClose, editingTransaction }: Props) {
-  const { categories, goals, addTransaction, updateTransaction, deleteTransaction, updateGoal } = useAppData()
+  const { categories, goals, piggyBanks, addTransaction, updateTransaction, deleteTransaction, updateGoal, updatePiggyBank } = useAppData()
   const [type, setType] = useState<TransactionType>('expense')
   const [amount, setAmount] = useState('')
   const [categoryId, setCategoryId] = useState<string | null>(null)
@@ -32,6 +32,7 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
   const [splitEnabled, setSplitEnabled] = useState(false)
   const [parts, setParts] = useState<SplitPart[]>([newPart()])
   const [goalAllocations, setGoalAllocations] = useState<Record<string, string>>({})
+  const [piggyAllocations, setPiggyAllocations] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (isOpen) {
@@ -51,6 +52,7 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
       setSplitEnabled(false)
       setParts([newPart()])
       setGoalAllocations({})
+      setPiggyAllocations({})
     }
   }, [isOpen, editingTransaction])
 
@@ -89,20 +91,37 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
     setParts((prev) => (prev.length > 1 ? prev.filter((p) => p.id !== id) : prev))
   }
 
-  function applyGoalSuggestions() {
+  const goalAllocationTotal = Object.values(goalAllocations).reduce((acc, v) => acc + (Number(v) || 0), 0)
+  const piggyAllocationTotal = Object.values(piggyAllocations).reduce((acc, v) => acc + (Number(v) || 0), 0)
+  const spendable = totalForAllocation - goalAllocationTotal - piggyAllocationTotal
+
+  function applyAllocationSuggestions() {
     if (totalForAllocation <= 0) return
-    const suggestions = suggestGoalAllocations(totalForAllocation, activeGoals)
-    const next: Record<string, string> = {}
-    for (const s of suggestions) next[s.goalId] = String(s.amount)
-    setGoalAllocations(next)
+    const goalSuggestions = suggestGoalAllocations(totalForAllocation, activeGoals)
+    const afterGoals = totalForAllocation - goalSuggestions.reduce((acc, s) => acc + s.amount, 0)
+    const piggySuggestions = suggestPiggyBankAllocations(afterGoals, piggyBanks, totalForAllocation)
+
+    const nextGoals: Record<string, string> = {}
+    for (const s of goalSuggestions) nextGoals[s.goalId] = String(s.amount)
+    setGoalAllocations(nextGoals)
+
+    const nextPiggy: Record<string, string> = {}
+    for (const s of piggySuggestions) nextPiggy[s.piggyBankId] = String(s.amount)
+    setPiggyAllocations(nextPiggy)
   }
 
-  async function applyGoalAllocations() {
-    const entries = Object.entries(goalAllocations).filter(([, v]) => Number(v) > 0)
-    for (const [goalId, v] of entries) {
+  async function applyAllocations() {
+    const goalEntries = Object.entries(goalAllocations).filter(([, v]) => Number(v) > 0)
+    for (const [goalId, v] of goalEntries) {
       const goal = goals.find((g) => g.id === goalId)
       if (!goal) continue
       await updateGoal(goalId, { currentAmount: goal.currentAmount + Number(v) })
+    }
+    const piggyEntries = Object.entries(piggyAllocations).filter(([, v]) => Number(v) > 0)
+    for (const [piggyBankId, v] of piggyEntries) {
+      const piggyBank = piggyBanks.find((p) => p.id === piggyBankId)
+      if (!piggyBank) continue
+      await updatePiggyBank(piggyBankId, { balance: piggyBank.balance + Number(v) })
     }
   }
 
@@ -145,7 +164,7 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
       })
     }
 
-    await applyGoalAllocations()
+    await applyAllocations()
     onClose()
   }
 
@@ -287,32 +306,66 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
             minRows={1}
           />
 
-          {type === 'income' && !editingTransaction && activeGoals.length > 0 && totalForAllocation > 0 && (
+          {type === 'income' && !editingTransaction && (activeGoals.length > 0 || piggyBanks.length > 0) && totalForAllocation > 0 && (
             <div className="rounded-2xl bg-slate-50 dark:bg-white/5 p-3 flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">Отложить в цели</span>
-                <button onClick={applyGoalSuggestions} className="text-xs font-semibold text-brand-500">
+                <span className="text-sm font-semibold">Куда отложить?</span>
+                <button onClick={applyAllocationSuggestions} className="text-xs font-semibold text-brand-500">
                   🤖 Предложить
                 </button>
               </div>
-              <p className="text-[11px] text-slate-400 -mt-1">Сумма не влияет на доход — просто помечает часть денег как отложенную на цель.</p>
-              {activeGoals.map((g) => (
-                <div key={g.id} className="flex items-center gap-2">
-                  <span className="text-sm w-28 truncate shrink-0">
-                    {g.icon} {g.title}
-                  </span>
-                  <Input
-                    aria-label={`Отложить в ${g.title}`}
-                    placeholder="0 ₽"
-                    inputMode="decimal"
-                    value={goalAllocations[g.id] ?? ''}
-                    onChange={(e) => setGoalAllocations((prev) => ({ ...prev, [g.id]: e.target.value.replace(/[^0-9.,]/g, '') }))}
-                    variant="bordered"
-                    size="sm"
-                    className="flex-1"
-                  />
+              <p className="text-[11px] text-slate-400 -mt-1">Не влияет на сумму дохода — просто резервирует часть денег на цели и копилки.</p>
+
+              {activeGoals.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Цели</span>
+                  {activeGoals.map((g) => (
+                    <div key={g.id} className="flex items-center gap-2">
+                      <span className="text-sm w-28 truncate shrink-0">
+                        {g.icon} {g.title}
+                      </span>
+                      <Input
+                        aria-label={`Отложить в ${g.title}`}
+                        placeholder="0 ₽"
+                        inputMode="decimal"
+                        value={goalAllocations[g.id] ?? ''}
+                        onChange={(e) => setGoalAllocations((prev) => ({ ...prev, [g.id]: e.target.value.replace(/[^0-9.,]/g, '') }))}
+                        variant="bordered"
+                        size="sm"
+                        className="flex-1"
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+
+              {piggyBanks.length > 0 && (
+                <div className="flex flex-col gap-1.5 pt-1">
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Копилки</span>
+                  {piggyBanks.map((p) => (
+                    <div key={p.id} className="flex items-center gap-2">
+                      <span className="text-sm w-28 truncate shrink-0">
+                        {p.icon} {p.title}
+                      </span>
+                      <Input
+                        aria-label={`Отложить в ${p.title}`}
+                        placeholder="0 ₽"
+                        inputMode="decimal"
+                        value={piggyAllocations[p.id] ?? ''}
+                        onChange={(e) => setPiggyAllocations((prev) => ({ ...prev, [p.id]: e.target.value.replace(/[^0-9.,]/g, '') }))}
+                        variant="bordered"
+                        size="sm"
+                        className="flex-1"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-2 mt-1 border-t border-black/5 dark:border-white/10 text-sm">
+                <span className="text-slate-500">💳 Оставить на траты</span>
+                <span className={`font-semibold tabular-nums ${spendable < 0 ? 'text-rose-500' : ''}`}>{formatRub(spendable)}</span>
+              </div>
             </div>
           )}
 

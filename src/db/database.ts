@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
-import type { AppSettings, Budget, Category, Goal, SalarySettings, Transaction } from '../types'
+import type { AppSettings, Budget, Category, Goal, PiggyBank, SalarySettings, Transaction } from '../types'
 
 interface FinanceDB extends DBSchema {
   transactions: {
@@ -16,6 +16,10 @@ interface FinanceDB extends DBSchema {
     key: string
     value: Goal
   }
+  piggyBanks: {
+    key: string
+    value: PiggyBank
+  }
   budgets: {
     key: string
     value: Budget
@@ -28,7 +32,7 @@ interface FinanceDB extends DBSchema {
 }
 
 const DB_NAME = 'finance-diary'
-const DB_VERSION = 1
+const DB_VERSION = 3
 
 let dbPromise: Promise<IDBPDatabase<FinanceDB>> | null = null
 
@@ -47,6 +51,9 @@ export function getDB() {
         }
         if (!db.objectStoreNames.contains('goals')) {
           db.createObjectStore('goals', { keyPath: 'id' })
+        }
+        if (!db.objectStoreNames.contains('piggyBanks')) {
+          db.createObjectStore('piggyBanks', { keyPath: 'id' })
         }
         if (!db.objectStoreNames.contains('budgets')) {
           const store = db.createObjectStore('budgets', { keyPath: 'id' })

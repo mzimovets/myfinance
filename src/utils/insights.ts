@@ -210,6 +210,30 @@ export function suggestGoalAllocations(totalAmount: number, goals: GoalAllocatio
     .filter((r) => r.amount > 0)
 }
 
+// ---------- Suggested piggy bank allocations when splitting income ----------
+
+export interface PiggyBankAllocationInput {
+  id: string
+  title: string
+  icon: string
+  color: string
+}
+
+export interface SuggestedPiggyAllocation {
+  piggyBankId: string
+  amount: number
+}
+
+const PIGGY_BANK_SHARE = 0.15 // suggest putting aside up to ~15% of an income entry across piggy banks
+
+export function suggestPiggyBankAllocations(remainingAmount: number, piggyBanks: PiggyBankAllocationInput[], totalAmount: number): SuggestedPiggyAllocation[] {
+  if (piggyBanks.length === 0 || remainingAmount <= 0 || totalAmount <= 0) return []
+  const cap = Math.min(remainingAmount, totalAmount * PIGGY_BANK_SHARE)
+  const perBank = Math.round(cap / piggyBanks.length / 10) * 10
+  if (perBank <= 0) return []
+  return piggyBanks.map((p) => ({ piggyBankId: p.id, amount: perBank }))
+}
+
 // ---------- Simple local Q&A engine (no LLM) ----------
 
 export interface QAResult {

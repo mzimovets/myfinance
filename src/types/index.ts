@@ -44,6 +44,15 @@ export interface Goal {
   completedAt?: number
 }
 
+export interface PiggyBank {
+  id: string
+  title: string
+  icon: string
+  color: string
+  balance: number
+  createdAt: number
+}
+
 export interface Budget {
   id: string
   categoryId: string

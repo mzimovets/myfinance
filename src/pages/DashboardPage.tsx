@@ -12,7 +12,7 @@ import GoalCard from '../components/goals/GoalCard'
 import type { PageKey } from '../App'
 
 export default function DashboardPage({ onNavigate }: { onNavigate: (p: PageKey) => void }) {
-  const { transactions, categories, goals, salary } = useAppData()
+  const { transactions, categories, goals, piggyBanks, salary } = useAppData()
   const now = new Date()
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories])
 
@@ -23,6 +23,7 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (p: PageKey)
   const daily = useMemo(() => dailyTotals(transactions, stats.startISO, stats.endISO), [transactions, stats])
   const insights = useMemo(() => generateInsights(transactions, categories, now), [transactions, categories])
   const recent = transactions.slice(0, 6)
+  const totalSavings = useMemo(() => piggyBanks.reduce((acc, p) => acc + p.balance, 0), [piggyBanks])
 
   const avgMonthlySaving = useMemo(() => {
     if (transactions.length === 0) return 0
@@ -58,6 +59,13 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (p: PageKey)
       <div className="grid grid-cols-2 gap-3">
         <StatCard label="Остаток за месяц" value={formatRub(stats.net)} tone={stats.net >= 0 ? 'positive' : 'negative'} icon="💡" />
         <StatCard label="Зарплата" value={salary.enabled ? formatRub(salary.amount) : '—'} sub={salary.enabled ? `${salary.payDay} числа` : 'Не настроена'} icon="💼" />
+        <StatCard
+          label="Накопления"
+          value={formatRub(totalSavings)}
+          sub={piggyBanks.length > 0 ? `${piggyBanks.length} ${piggyBanks.length === 1 ? 'копилка' : 'копилки'}` : 'Нет копилок'}
+          icon="🐷"
+        />
+        <StatCard label="Цели" value={`${goals.filter((g) => g.currentAmount >= g.targetAmount).length}/${goals.length || 0}`} sub={goals.length > 0 ? 'достигнуто' : 'Нет целей'} icon="🎯" />
       </div>
 
       <section className="card-surface rounded-2xl p-4">

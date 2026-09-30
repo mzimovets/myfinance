@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { AppSettings, Budget, Category, Goal, SalarySettings, Transaction } from '../types'
+import type { AppSettings, Budget, Category, Goal, PiggyBank, SalarySettings, Transaction } from '../types'
 import * as repo from '../db/repository'
 
 interface AppDataState {
@@ -7,6 +7,7 @@ interface AppDataState {
   transactions: Transaction[]
   categories: Category[]
   goals: Goal[]
+  piggyBanks: PiggyBank[]
   budgets: Budget[]
   salary: SalarySettings
   appSettings: AppSettings
@@ -23,6 +24,9 @@ interface AppDataActions {
   addGoal: (input: Omit<Goal, 'id' | 'createdAt'>) => Promise<void>
   updateGoal: (id: string, patch: Partial<Omit<Goal, 'id' | 'createdAt'>>) => Promise<void>
   deleteGoal: (id: string) => Promise<void>
+  addPiggyBank: (input: Omit<PiggyBank, 'id' | 'createdAt'>) => Promise<void>
+  updatePiggyBank: (id: string, patch: Partial<Omit<PiggyBank, 'id' | 'createdAt'>>) => Promise<void>
+  deletePiggyBank: (id: string) => Promise<void>
   upsertBudget: (input: Omit<Budget, 'id' | 'createdAt'> & { id?: string }) => Promise<void>
   deleteBudget: (id: string) => Promise<void>
   setSalarySettings: (settings: SalarySettings) => Promise<void>
@@ -41,21 +45,23 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     transactions: [],
     categories: [],
     goals: [],
+    piggyBanks: [],
     budgets: [],
     salary: { id: 'salary', enabled: false, amount: 0, payDay: 5, periodicity: 'monthly', categoryId: 'inc-salary' },
     appSettings: { id: 'app', theme: 'system', currency: 'RUB', onboarded: false },
   })
 
   const refresh = useCallback(async () => {
-    const [transactions, categories, goals, budgets, salary, appSettings] = await Promise.all([
+    const [transactions, categories, goals, piggyBanks, budgets, salary, appSettings] = await Promise.all([
       repo.listTransactions(),
       repo.listCategories(),
       repo.listGoals(),
+      repo.listPiggyBanks(),
       repo.listBudgets(),
       repo.getSalarySettings(),
       repo.getAppSettings(),
     ])
-    setState({ ready: true, transactions, categories, goals, budgets, salary, appSettings })
+    setState({ ready: true, transactions, categories, goals, piggyBanks, budgets, salary, appSettings })
   }, [])
 
   useEffect(() => {
@@ -102,6 +108,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       },
       deleteGoal: async (id) => {
         await repo.deleteGoal(id)
+        await refresh()
+      },
+      addPiggyBank: async (input) => {
+        await repo.addPiggyBank(input)
+        await refresh()
+      },
+      updatePiggyBank: async (id, patch) => {
+        await repo.updatePiggyBank(id, patch)
+        await refresh()
+      },
+      deletePiggyBank: async (id) => {
+        await repo.deletePiggyBank(id)
         await refresh()
       },
       upsertBudget: async (input) => {

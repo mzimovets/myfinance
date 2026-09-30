@@ -1,7 +1,7 @@
 import { getDB } from './database'
 import { DEFAULT_CATEGORIES } from './defaultCategories'
 import { computeMissingSalaryOccurrences } from '../utils/salaryAutomation'
-import type { AppSettings, Budget, Category, Goal, SalarySettings, Transaction } from '../types'
+import type { AppSettings, Budget, Category, Goal, PiggyBank, SalarySettings, Transaction } from '../types'
 
 function uid(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`
@@ -113,6 +113,33 @@ export async function deleteGoal(id: string): Promise<void> {
   await db.delete('goals', id)
 }
 
+// ---------- Piggy banks ----------
+
+export async function listPiggyBanks(): Promise<PiggyBank[]> {
+  const db = await getDB()
+  const all = await db.getAll('piggyBanks')
+  return all.sort((a, b) => b.createdAt - a.createdAt)
+}
+
+export async function addPiggyBank(input: Omit<PiggyBank, 'id' | 'createdAt'>): Promise<PiggyBank> {
+  const db = await getDB()
+  const piggyBank: PiggyBank = { ...input, id: uid(), createdAt: Date.now() }
+  await db.put('piggyBanks', piggyBank)
+  return piggyBank
+}
+
+export async function updatePiggyBank(id: string, patch: Partial<Omit<PiggyBank, 'id' | 'createdAt'>>): Promise<void> {
+  const db = await getDB()
+  const existing = await db.get('piggyBanks', id)
+  if (!existing) return
+  await db.put('piggyBanks', { ...existing, ...patch })
+}
+
+export async function deletePiggyBank(id: string): Promise<void> {
+  const db = await getDB()
+  await db.delete('piggyBanks', id)
+}
+
 // ---------- Budgets ----------
 
 export async function listBudgets(): Promise<Budget[]> {
@@ -188,31 +215,34 @@ export async function syncSalaryIncome(): Promise<void> {
 // ---------- Import / Export ----------
 
 export interface ExportPayload {
-  version: 1
+  version: 1 | 2
   exportedAt: string
   transactions: Transaction[]
   categories: Category[]
   goals: Goal[]
+  piggyBanks?: PiggyBank[]
   budgets: Budget[]
   salary: SalarySettings
   appSettings: AppSettings
 }
 
 export async function exportAllData(): Promise<ExportPayload> {
-  const [transactions, categories, goals, budgets, salary, appSettings] = await Promise.all([
+  const [transactions, categories, goals, piggyBanks, budgets, salary, appSettings] = await Promise.all([
     listTransactions(),
     listCategories(),
     listGoals(),
+    listPiggyBanks(),
     listBudgets(),
     getSalarySettings(),
     getAppSettings(),
   ])
   return {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     transactions,
     categories,
     goals,
+    piggyBanks,
     budgets,
     salary,
     appSettings,
@@ -221,11 +251,12 @@ export async function exportAllData(): Promise<ExportPayload> {
 
 export async function importAllData(payload: ExportPayload): Promise<void> {
   const db = await getDB()
-  const tx = db.transaction(['transactions', 'categories', 'goals', 'budgets', 'settings'], 'readwrite')
+  const tx = db.transaction(['transactions', 'categories', 'goals', 'piggyBanks', 'budgets', 'settings'], 'readwrite')
   await Promise.all([
     ...payload.transactions.map((t) => tx.objectStore('transactions').put(t)),
     ...payload.categories.map((c) => tx.objectStore('categories').put(c)),
     ...payload.goals.map((g) => tx.objectStore('goals').put(g)),
+    ...(payload.piggyBanks ?? []).map((p) => tx.objectStore('piggyBanks').put(p)),
     ...payload.budgets.map((b) => tx.objectStore('budgets').put(b)),
     tx.objectStore('settings').put(payload.salary),
     tx.objectStore('settings').put(payload.appSettings),
@@ -235,11 +266,12 @@ export async function importAllData(payload: ExportPayload): Promise<void> {
 
 export async function wipeAllData(): Promise<void> {
   const db = await getDB()
-  const tx = db.transaction(['transactions', 'categories', 'goals', 'budgets', 'settings'], 'readwrite')
+  const tx = db.transaction(['transactions', 'categories', 'goals', 'piggyBanks', 'budgets', 'settings'], 'readwrite')
   await Promise.all([
     tx.objectStore('transactions').clear(),
     tx.objectStore('categories').clear(),
     tx.objectStore('goals').clear(),
+    tx.objectStore('piggyBanks').clear(),
     tx.objectStore('budgets').clear(),
     tx.objectStore('settings').clear(),
   ])
