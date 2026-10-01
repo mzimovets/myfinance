@@ -6,6 +6,7 @@ import type { Transaction, TransactionType } from '../../types'
 import { formatRub, todayISO } from '../../utils/format'
 import { suggestGoalAllocations, suggestPiggyBankAllocations } from '../../utils/insights'
 import DateField from '../common/DateField'
+import PlusIcon from '../icons/PlusIcon'
 
 interface Props {
   isOpen: boolean
@@ -279,8 +280,8 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
                   )}
                 </div>
               ))}
-              <button onClick={addPartRow} className="self-start text-xs font-semibold text-brand-500 px-1 py-1">
-                + Добавить часть
+              <button onClick={addPartRow} aria-label="Добавить часть" className="self-start h-7 w-7 rounded-full flex items-center justify-center text-brand-500 bg-brand-500/10">
+                <PlusIcon className="h-4 w-4" />
               </button>
               <div className="text-right text-sm text-slate-400">
                 Итого: <span className="font-semibold text-slate-700 dark:text-slate-200">{formatRub(partsTotal)}</span>

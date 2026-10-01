@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Modal, ModalContent, ModalBody, ModalHeader, Input, Button } from '@heroui/react'
 import { useAppData } from '../../context/AppDataContext'
+import DateField from '../common/DateField'
+import { todayISO } from '../../utils/format'
 import type { Goal } from '../../types'
 
 const ICONS = ['🎯', '✈️', '📱', '🚗', '🏠', '💻', '🎓', '💍', '🏖️', '🎁']
@@ -60,10 +62,39 @@ export default function GoalFormModal({ isOpen, onClose, goal }: { isOpen: boole
         <ModalBody className="pb-6 flex flex-col gap-3">
           <Input label="Название" labelPlacement="outside" placeholder="Например, отпуск" value={title} onChange={(e) => setTitle(e.target.value)} variant="bordered" />
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Нужная сумма ₽" labelPlacement="outside" type="number" value={target} onChange={(e) => setTarget(e.target.value)} variant="bordered" />
-            <Input label="Уже накоплено ₽" labelPlacement="outside" type="number" value={current} onChange={(e) => setCurrent(e.target.value)} variant="bordered" />
+            <div>
+              <div className="text-xs text-slate-400 mb-1.5">Нужная сумма ₽</div>
+              <input
+                inputMode="decimal"
+                placeholder="0"
+                value={target}
+                onChange={(e) => setTarget(e.target.value.replace(/[^0-9]/g, ''))}
+                className="w-full rounded-xl border-2 border-slate-200 dark:border-white/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-500"
+              />
+            </div>
+            <div>
+              <div className="text-xs text-slate-400 mb-1.5">Уже накоплено ₽</div>
+              <input
+                inputMode="decimal"
+                placeholder="0"
+                value={current}
+                onChange={(e) => setCurrent(e.target.value.replace(/[^0-9]/g, ''))}
+                className="w-full rounded-xl border-2 border-slate-200 dark:border-white/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-500"
+              />
+            </div>
           </div>
-          <Input label="Дедлайн (необязательно)" labelPlacement="outside" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} variant="bordered" />
+          {deadline ? (
+            <div>
+              <DateField label="Дедлайн" value={deadline} onChange={setDeadline} />
+              <button onClick={() => setDeadline('')} className="text-xs text-slate-400 mt-1.5">
+                Убрать дедлайн
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setDeadline(todayISO())} className="self-start text-xs font-semibold text-brand-500">
+              + Добавить дедлайн
+            </button>
+          )}
 
           <div>
             <div className="text-xs text-slate-400 mb-1.5">Иконка</div>

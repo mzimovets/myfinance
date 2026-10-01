@@ -4,6 +4,7 @@ import { useAppData } from '../../context/AppDataContext'
 import { computeMonthStats } from '../../utils/analytics'
 import { formatRub } from '../../utils/format'
 import GoalProgressBar from '../goals/GoalProgressBar'
+import PlusIcon from '../icons/PlusIcon'
 import type { Budget } from '../../types'
 
 export default function BudgetsManager() {
@@ -20,8 +21,8 @@ export default function BudgetsManager() {
     <div className="card-surface rounded-2xl p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold">Бюджеты по категориям</h2>
-        <button onClick={() => setModalBudget(null)} className="text-xs font-semibold text-brand-500">
-          + Добавить
+        <button onClick={() => setModalBudget(null)} aria-label="Добавить бюджет" className="h-7 w-7 rounded-full flex items-center justify-center text-brand-500 bg-brand-500/10">
+          <PlusIcon className="h-4 w-4" />
         </button>
       </div>
       {budgets.length === 0 ? (

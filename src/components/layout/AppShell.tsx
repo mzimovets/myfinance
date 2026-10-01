@@ -113,21 +113,15 @@ export default function AppShell({
 
 function NavButton({ item, active, onClick }: { item: NavItem; active: boolean; onClick: () => void }) {
   return (
-    <button
-      onClick={onClick}
-      className={`relative flex-1 basis-0 flex flex-col items-center justify-center gap-0.5 py-1.5 text-[9px] tracking-tight font-medium whitespace-nowrap ${
-        active ? 'text-brand-600 dark:text-brand-300' : 'text-slate-400'
-      }`}
-    >
+    <button onClick={onClick} aria-label={item.label} className="relative flex-1 basis-0 flex items-center justify-center py-2.5">
       {active && (
         <motion.div
           layoutId="nav-pill-mobile"
-          className="absolute inset-y-0.5 inset-x-1 rounded-2xl bg-brand-500/10"
+          className="absolute h-11 w-11 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-brand-500/10"
           transition={{ type: 'spring', stiffness: 400, damping: 32 }}
         />
       )}
-      <span className="relative z-10 text-lg leading-none">{item.icon}</span>
-      <span className="relative z-10">{item.label}</span>
+      <span className={`relative z-10 text-xl leading-none ${active ? '' : 'opacity-60'}`}>{item.icon}</span>
     </button>
   )
 }

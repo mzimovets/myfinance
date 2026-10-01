@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Switch, Input, Select, SelectItem, Button } from '@heroui/react'
 import { useAppData } from '../../context/AppDataContext'
 import type { SalaryPart, SalaryPeriodicity } from '../../types'
+import PlusIcon from '../icons/PlusIcon'
 
 const PERIODICITY_LABEL: Record<SalaryPeriodicity, string> = {
   monthly: 'Раз в месяц',
@@ -91,29 +92,38 @@ export default function SalarySettingsCard() {
                   ✕
                 </button>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <Input
-                  label="Сумма ₽"
-                  labelPlacement="outside"
-                  type="number"
+
+              <div>
+                <div className="text-xs text-slate-400 mb-1">Сумма ₽</div>
+                <input
+                  inputMode="decimal"
+                  placeholder="0"
                   value={part.amount ? String(part.amount) : ''}
-                  onChange={(e) => updatePart(part.id, { amount: Number(e.target.value) || 0 })}
-                  variant="bordered"
-                  size="sm"
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/[^0-9]/g, '')
+                    updatePart(part.id, { amount: digits ? Number(digits) : 0 })
+                  }}
+                  className="w-full rounded-xl border-2 border-slate-200 dark:border-white/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-500"
                 />
-                <Input
-                  label="День"
-                  labelPlacement="outside"
-                  type="number"
-                  min={1}
-                  max={31}
-                  value={String(part.payDay)}
-                  onChange={(e) => updatePart(part.id, { payDay: Number(e.target.value) || 1 })}
-                  variant="bordered"
-                  size="sm"
-                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="text-xs text-slate-400 mb-1">День месяца выплаты</div>
+                  <input
+                    inputMode="numeric"
+                    placeholder="5"
+                    value={String(part.payDay)}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/[^0-9]/g, '').slice(0, 2)
+                      const num = digits ? Math.min(31, Math.max(1, Number(digits))) : 1
+                      updatePart(part.id, { payDay: num })
+                    }}
+                    className="w-full rounded-xl border-2 border-slate-200 dark:border-white/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-500"
+                  />
+                </div>
                 <Select
-                  label="Период"
+                  label="Как часто"
                   labelPlacement="outside"
                   selectedKeys={[part.periodicity]}
                   onSelectionChange={(keys) => updatePart(part.id, { periodicity: Array.from(keys)[0] as SalaryPeriodicity })}
@@ -127,8 +137,8 @@ export default function SalarySettingsCard() {
               </div>
             </div>
           ))}
-          <button onClick={addPart} className="self-start text-xs font-semibold text-brand-500">
-            + Добавить выплату
+          <button onClick={addPart} aria-label="Добавить выплату" className="self-start h-7 w-7 rounded-full flex items-center justify-center text-brand-500 bg-brand-500/10">
+            <PlusIcon className="h-4 w-4" />
           </button>
           <p className="text-[11px] text-slate-400">
             Суммы можно пересчитывать в любой момент — обновите их здесь перед очередной выплатой, либо отредактируйте уже созданную операцию в «Операциях». Учитывается в категории «💼 Зарплата».

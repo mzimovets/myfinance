@@ -8,7 +8,7 @@ export default function ChartPeriodSelector({ value, onChange }: { value: ChartP
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className="relative px-2.5 py-1 rounded-full text-[11px] font-semibold"
+          className="relative w-9 py-1 rounded-full text-[11px] font-semibold"
         >
           {value === opt.value && (
             <motion.div

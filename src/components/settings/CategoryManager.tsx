@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Modal, ModalContent, ModalBody, ModalHeader, Input, Button } from '@heroui/react'
 import { useAppData } from '../../context/AppDataContext'
 import type { Category, TransactionType } from '../../types'
+import PlusIcon from '../icons/PlusIcon'
 
 const EMOJI_CHOICES = ['🍔', '🚗', '🏠', '🛒', '🎮', '☕', '💊', '📱', '💼', '💰', '🎁', '💵', '🐶', '✈️', '🎓', '🧴', '🧾', '🎵', '📚', '🧹']
 const COLOR_CHOICES = ['#f97316', '#3b82f6', '#8b5cf6', '#ec4899', '#22c55e', '#a16207', '#ef4444', '#06b6d4', '#4361ee', '#6b7280']
@@ -17,8 +18,8 @@ export default function CategoryManager() {
     <div className="card-surface rounded-2xl p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold">Категории</h2>
-        <button onClick={() => setEditing(null)} className="text-xs font-semibold text-brand-500">
-          + Добавить
+        <button onClick={() => setEditing(null)} aria-label="Добавить категорию" className="h-7 w-7 rounded-full flex items-center justify-center text-brand-500 bg-brand-500/10">
+          <PlusIcon className="h-4 w-4" />
         </button>
       </div>
       <div className="flex rounded-xl bg-slate-100 dark:bg-white/5 p-1 text-xs font-medium w-fit">

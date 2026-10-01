@@ -75,7 +75,7 @@ export default function PiggyBankFormModal({ isOpen, onClose, piggyBank }: { isO
               </div>
             </div>
           ) : (
-            <Input label="Начальная сумма ₽" labelPlacement="outside" type="number" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} variant="bordered" />
+            <Input label="Начальная сумма ₽" labelPlacement="outside" inputMode="decimal" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value.replace(/[^0-9]/g, ''))} variant="bordered" />
           )}
 
           <div>
