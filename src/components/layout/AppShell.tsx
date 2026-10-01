@@ -2,6 +2,8 @@ import { useState, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import type { PageKey } from '../../App'
 import AddTransactionModal from '../transactions/AddTransactionModal'
+import WalletMoneyIcon from '../icons/WalletMoneyIcon'
+import PlusIcon from '../icons/PlusIcon'
 
 interface NavItem {
   key: PageKey
@@ -34,7 +36,9 @@ export default function AppShell({
         {/* Desktop sidebar */}
         <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 border-r border-black/5 dark:border-white/10 bg-white/70 dark:bg-white/[0.03] backdrop-blur-xl px-4 py-6">
           <div className="flex items-center gap-2 px-2 mb-8">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center text-white font-bold">₽</div>
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center text-white p-1.5">
+              <WalletMoneyIcon className="h-full w-full" />
+            </div>
             <span className="font-semibold text-sm tracking-tight leading-tight">Мои финансы</span>
           </div>
           <nav className="flex flex-col gap-1">
@@ -42,14 +46,19 @@ export default function AppShell({
               <button
                 key={item.key}
                 onClick={() => onNavigate(item.key)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs tracking-tight font-medium transition-colors whitespace-nowrap ${
-                  page === item.key
-                    ? 'bg-brand-500/10 text-brand-600 dark:text-brand-300'
-                    : 'text-slate-500 hover:bg-black/5 dark:hover:bg-white/5 dark:text-slate-400'
+                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs tracking-tight font-medium transition-colors whitespace-nowrap ${
+                  page === item.key ? 'text-brand-600 dark:text-brand-300' : 'text-slate-500 hover:bg-black/5 dark:hover:bg-white/5 dark:text-slate-400'
                 }`}
               >
-                <span className="text-lg">{item.icon}</span>
-                {item.label}
+                {page === item.key && (
+                  <motion.div
+                    layoutId="nav-pill-desktop"
+                    className="absolute inset-0 rounded-xl bg-brand-500/10"
+                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                  />
+                )}
+                <span className="relative z-10 text-lg">{item.icon}</span>
+                <span className="relative z-10">{item.label}</span>
               </button>
             ))}
           </nav>
@@ -57,17 +66,22 @@ export default function AppShell({
             onClick={() => setAddOpen(true)}
             className="mt-auto flex items-center justify-center gap-2 rounded-xl bg-brand-500 text-white font-medium py-3 text-xs tracking-tight whitespace-nowrap hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/30"
           >
-            <span className="text-base leading-none">+</span> Добавить операцию
+            <PlusIcon className="h-4 w-4" /> Добавить операцию
           </button>
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 md:ml-64 px-4 pt-6 pb-28 md:pb-10 max-w-3xl mx-auto w-full">{children}</main>
+        <main className="flex-1 md:ml-64 px-4 pt-[max(1.5rem,calc(env(safe-area-inset-top)+0.75rem))] md:pt-6 pb-28 md:pb-10 max-w-3xl mx-auto w-full">
+          {children}
+        </main>
       </div>
 
       {/* Mobile bottom nav */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 safe-bottom">
-        <div className="mx-3 mb-3 rounded-2xl bg-white/90 dark:bg-[#12131c]/90 backdrop-blur-xl border border-black/5 dark:border-white/10 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.25)] flex items-center justify-between px-2 py-2 relative">
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40">
+        <div
+          className="mx-3 rounded-t-3xl bg-white/90 dark:bg-[#12131c]/90 backdrop-blur-xl border border-b-0 border-black/5 dark:border-white/10 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.25)] flex items-center justify-between px-2 pt-2 relative"
+          style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+        >
           {NAV_ITEMS.slice(0, 2).map((item) => (
             <NavButton key={item.key} item={item} active={page === item.key} onClick={() => onNavigate(item.key)} />
           ))}
@@ -78,10 +92,10 @@ export default function AppShell({
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setAddOpen(true)}
-            className="absolute left-1/2 -translate-x-1/2 -top-6 h-14 w-14 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white text-2xl font-light flex items-center justify-center shadow-lg shadow-brand-500/40"
+            className="absolute left-1/2 -translate-x-1/2 -top-6 h-14 w-14 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-500/40"
             aria-label="Добавить операцию"
           >
-            +
+            <PlusIcon className="h-6 w-6" />
           </motion.button>
         </div>
       </div>
@@ -93,9 +107,16 @@ export default function AppShell({
 
 function NavButton({ item, active, onClick }: { item: NavItem; active: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[9px] tracking-tight font-medium whitespace-nowrap ${active ? 'text-brand-600 dark:text-brand-300' : 'text-slate-400'}`}>
-      <span className="text-lg leading-none">{item.icon}</span>
-      {item.label}
+    <button onClick={onClick} className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-[9px] tracking-tight font-medium whitespace-nowrap ${active ? 'text-brand-600 dark:text-brand-300' : 'text-slate-400'}`}>
+      {active && (
+        <motion.div
+          layoutId="nav-pill-mobile"
+          className="absolute inset-0 rounded-xl bg-brand-500/10"
+          transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+        />
+      )}
+      <span className="relative z-10 text-lg leading-none">{item.icon}</span>
+      <span className="relative z-10">{item.label}</span>
     </button>
   )
 }
