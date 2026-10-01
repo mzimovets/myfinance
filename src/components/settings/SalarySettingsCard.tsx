@@ -51,7 +51,9 @@ export default function SalarySettingsCard() {
       id: 'salary',
       enabled,
       categoryId: salary.categoryId || 'inc-salary',
-      parts: parts.filter((p) => p.label.trim().length > 0),
+      parts: parts
+        .filter((p) => p.label.trim().length > 0)
+        .map((p) => ({ ...p, payDay: Math.min(31, Math.max(1, p.payDay || 1)) })),
     })
     setDirty(false)
   }
@@ -107,34 +109,32 @@ export default function SalarySettingsCard() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <div className="text-xs text-slate-400 mb-1">День месяца выплаты</div>
-                  <input
-                    inputMode="numeric"
-                    placeholder="5"
-                    value={String(part.payDay)}
-                    onChange={(e) => {
-                      const digits = e.target.value.replace(/[^0-9]/g, '').slice(0, 2)
-                      const num = digits ? Math.min(31, Math.max(1, Number(digits))) : 1
-                      updatePart(part.id, { payDay: num })
-                    }}
-                    className="w-full rounded-xl border-2 border-slate-200 dark:border-white/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-500"
-                  />
-                </div>
-                <Select
-                  label="Как часто"
-                  labelPlacement="outside"
-                  selectedKeys={[part.periodicity]}
-                  onSelectionChange={(keys) => updatePart(part.id, { periodicity: Array.from(keys)[0] as SalaryPeriodicity })}
-                  variant="bordered"
-                  size="sm"
-                >
-                  {Object.entries(PERIODICITY_LABEL).map(([key, label]) => (
-                    <SelectItem key={key}>{label}</SelectItem>
-                  ))}
-                </Select>
+              <div>
+                <div className="text-xs text-slate-400 mb-1">День месяца выплаты</div>
+                <input
+                  inputMode="numeric"
+                  placeholder="5"
+                  value={part.payDay ? String(part.payDay) : ''}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/[^0-9]/g, '').slice(0, 2)
+                    updatePart(part.id, { payDay: digits ? Number(digits) : 0 })
+                  }}
+                  className="w-full rounded-xl border-2 border-slate-200 dark:border-white/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-500"
+                />
               </div>
+
+              <Select
+                label="Как часто"
+                labelPlacement="outside"
+                selectedKeys={[part.periodicity]}
+                onSelectionChange={(keys) => updatePart(part.id, { periodicity: Array.from(keys)[0] as SalaryPeriodicity })}
+                variant="bordered"
+                size="sm"
+              >
+                {Object.entries(PERIODICITY_LABEL).map(([key, label]) => (
+                  <SelectItem key={key}>{label}</SelectItem>
+                ))}
+              </Select>
             </div>
           ))}
           <button onClick={addPart} aria-label="Добавить выплату" className="self-start h-7 w-7 rounded-full flex items-center justify-center text-brand-500 bg-brand-500/10">

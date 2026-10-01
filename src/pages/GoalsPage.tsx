@@ -6,6 +6,7 @@ import GoalCard from '../components/goals/GoalCard'
 import GoalFormModal from '../components/goals/GoalFormModal'
 import PiggyBankCard from '../components/piggybanks/PiggyBankCard'
 import PiggyBankFormModal from '../components/piggybanks/PiggyBankFormModal'
+import PlusIcon from '../components/icons/PlusIcon'
 import type { Goal, PiggyBank } from '../types'
 
 type Tab = 'goals' | 'piggy'
@@ -44,9 +45,10 @@ export default function GoalsPage() {
         <h1 className="text-2xl font-bold">Цели и копилки</h1>
         <button
           onClick={() => (tab === 'goals' ? setModalGoal(null) : setModalPiggy(null))}
-          className="h-9 px-4 rounded-xl bg-brand-500 text-white text-sm font-semibold"
+          aria-label={tab === 'goals' ? 'Добавить цель' : 'Добавить копилку'}
+          className="h-9 w-9 rounded-xl bg-brand-500 text-white flex items-center justify-center"
         >
-          {tab === 'goals' ? '+ Цель' : '+ Копилка'}
+          <PlusIcon className="h-4 w-4" />
         </button>
       </header>
 

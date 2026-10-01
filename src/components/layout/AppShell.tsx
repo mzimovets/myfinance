@@ -117,7 +117,7 @@ function NavButton({ item, active, onClick }: { item: NavItem; active: boolean; 
       {active && (
         <motion.div
           layoutId="nav-pill-mobile"
-          className="absolute h-11 w-11 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-brand-500/10"
+          className="absolute inset-0 m-auto h-11 w-11 rounded-2xl bg-brand-500/10"
           transition={{ type: 'spring', stiffness: 400, damping: 32 }}
         />
       )}

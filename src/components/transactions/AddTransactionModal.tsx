@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Drawer, DrawerContent, DrawerBody, DrawerHeader, Input, Textarea, Button, Select, SelectItem } from '@heroui/react'
+import { Drawer, DrawerContent, DrawerBody, DrawerHeader, Input, Textarea, Button, Select, SelectItem, Modal, ModalContent, ModalBody } from '@heroui/react'
 import { motion } from 'framer-motion'
 import { useAppData } from '../../context/AppDataContext'
 import type { Transaction, TransactionType } from '../../types'
@@ -33,6 +33,7 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
   const [description, setDescription] = useState('')
   const [splitEnabled, setSplitEnabled] = useState(false)
   const [parts, setParts] = useState<SplitPart[]>([newPart()])
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const [goalAllocations, setGoalAllocations] = useState<Record<string, string>>({})
   const [piggyAllocations, setPiggyAllocations] = useState<Record<string, string>>({})
 
@@ -55,6 +56,7 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
       setParts([newPart()])
       setGoalAllocations({})
       setPiggyAllocations({})
+      setShowDiscardConfirm(false)
     }
   }, [isOpen, editingTransaction])
 
@@ -177,8 +179,26 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
     }
   }
 
+  const hasUnsavedInput = splitEnabled
+    ? parts.some((p) => p.categoryId || Number(p.amount.replace(',', '.')) > 0)
+    : numericAmount > 0 || !!categoryId || description.trim().length > 0
+
+  function handleRequestClose() {
+    if (hasUnsavedInput) {
+      setShowDiscardConfirm(true)
+    } else {
+      onClose()
+    }
+  }
+
+  function confirmDiscard() {
+    setShowDiscardConfirm(false)
+    onClose()
+  }
+
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} placement="bottom" size="lg" radius="lg">
+    <>
+    <Drawer isOpen={isOpen} onClose={handleRequestClose} placement="bottom" size="full" radius="none">
       <DrawerContent>
         <DrawerHeader className="flex flex-col gap-1">{editingTransaction ? 'Редактировать операцию' : 'Новая операция'}</DrawerHeader>
         <DrawerBody className="pb-6">
@@ -377,5 +397,25 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
         </DrawerBody>
       </DrawerContent>
     </Drawer>
+
+    <Modal isOpen={showDiscardConfirm} onClose={() => setShowDiscardConfirm(false)} size="sm" placement="center">
+      <ModalContent>
+        <ModalBody className="py-6 flex flex-col gap-4">
+          <div>
+            <p className="font-semibold">Отменить ввод?</p>
+            <p className="text-sm text-slate-400 mt-1">Введённые данные не сохранятся.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="flat" className="flex-1" onPress={() => setShowDiscardConfirm(false)}>
+              Продолжить ввод
+            </Button>
+            <Button color="danger" className="flex-1" onPress={confirmDiscard}>
+              Отменить
+            </Button>
+          </div>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
+    </>
   )
 }
