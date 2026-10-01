@@ -28,14 +28,14 @@ npm run preview
 
 ## Публикация на GitHub Pages
 
-1. Убедитесь, что `base` в `vite.config.ts` соответствует имени репозитория (сейчас `/finance-diary/`).
+1. Убедитесь, что `base` в `vite.config.ts` соответствует имени репозитория (сейчас `/myfinance/`).
 2. Запушьте изменения в ветку `main` — workflow `.github/workflows/deploy.yml` соберёт проект и опубликует `dist/` через GitHub Pages автоматически.
 3. В настройках репозитория (Settings → Pages) выберите источник **GitHub Actions**.
-4. После первого успешного запуска приложение будет доступно по адресу `https://<username>.github.io/finance-diary/`.
+4. После первого успешного запуска приложение будет доступно по адресу `https://<username>.github.io/myfinance/`.
 
 ## Иконки
 
-Иконки приложения генерируются из `scripts/icon-source.svg` скриптом `scripts/generate-icons.mjs`:
+Иконки приложения генерируются из `scripts/icon-master.jpg` (рендер 800×800, Unbounded + градиент) скриптом `scripts/generate-icons.mjs`:
 
 ```bash
 node scripts/generate-icons.mjs
