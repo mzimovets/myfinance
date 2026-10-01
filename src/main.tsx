@@ -9,7 +9,7 @@ import { ThemeProvider } from './context/ThemeContext'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
-      <HeroUIProvider>
+      <HeroUIProvider locale="ru-RU">
         <AppDataProvider>
           <App />
         </AppDataProvider>

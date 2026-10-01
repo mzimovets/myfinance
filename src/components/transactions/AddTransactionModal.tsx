@@ -5,6 +5,7 @@ import { useAppData } from '../../context/AppDataContext'
 import type { Transaction, TransactionType } from '../../types'
 import { formatRub, todayISO } from '../../utils/format'
 import { suggestGoalAllocations, suggestPiggyBankAllocations } from '../../utils/insights'
+import DateField from '../common/DateField'
 
 interface Props {
   isOpen: boolean
@@ -287,14 +288,7 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
             </div>
           )}
 
-          <Input
-            type="date"
-            label="Дата"
-            labelPlacement="outside"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            variant="bordered"
-          />
+          <DateField label="Дата" value={date} onChange={setDate} />
 
           <Textarea
             label="Описание"

@@ -1,10 +1,12 @@
 import { useMemo } from 'react'
 import { useAppData } from '../context/AppDataContext'
-import { computeMonthStats, dailyTotals, sumByType } from '../utils/analytics'
+import { computeMonthStats, dailyTotals, sumByType, trailingDaysRange } from '../utils/analytics'
 import { formatMonthLabel, formatRub } from '../utils/format'
 import { generateInsights } from '../utils/insights'
+import { periodDays, useChartPeriod } from '../hooks/useChartPeriod'
 import StatCard from '../components/common/StatCard'
 import CashflowChart from '../components/dashboard/CashflowChart'
+import ChartPeriodSelector from '../components/dashboard/ChartPeriodSelector'
 import CategoryPieChart from '../components/dashboard/CategoryPieChart'
 import InsightsList from '../components/dashboard/InsightsList'
 import TransactionRow from '../components/transactions/TransactionRow'
@@ -20,7 +22,9 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (p: PageKey)
   const totalIncome = useMemo(() => sumByType(transactions, 'income'), [transactions])
   const totalExpense = useMemo(() => sumByType(transactions, 'expense'), [transactions])
   const balance = totalIncome - totalExpense
-  const daily = useMemo(() => dailyTotals(transactions, stats.startISO, stats.endISO), [transactions, stats])
+  const [chartPeriod, setChartPeriod] = useChartPeriod()
+  const chartRange = useMemo(() => trailingDaysRange(periodDays(chartPeriod), now), [chartPeriod])
+  const daily = useMemo(() => dailyTotals(transactions, chartRange.startISO, chartRange.endISO), [transactions, chartRange])
   const insights = useMemo(() => generateInsights(transactions, categories, now), [transactions, categories])
   const recent = transactions.slice(0, 6)
   const totalSavings = useMemo(() => piggyBanks.reduce((acc, p) => acc + p.balance, 0), [piggyBanks])
@@ -76,6 +80,7 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (p: PageKey)
       <section className="card-surface rounded-2xl p-4">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-semibold">Доходы и расходы</h2>
+          <ChartPeriodSelector value={chartPeriod} onChange={setChartPeriod} />
         </div>
         <CashflowChart data={daily} />
       </section>

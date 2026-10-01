@@ -169,8 +169,12 @@ export function previousMonth(year: number, month: number): { year: number; mont
 }
 
 export function last30DaysRange(now: Date = new Date()): { startISO: string; endISO: string } {
+  return trailingDaysRange(30, now)
+}
+
+export function trailingDaysRange(days: number, now: Date = new Date()): { startISO: string; endISO: string } {
   const end = new Date(now)
   const start = new Date(now)
-  start.setDate(start.getDate() - 29)
+  start.setDate(start.getDate() - (days - 1))
   return { startISO: toISO(start), endISO: toISO(end) }
 }

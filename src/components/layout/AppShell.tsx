@@ -82,22 +82,26 @@ export default function AppShell({
           className="mx-3 rounded-t-3xl bg-white/90 dark:bg-[#12131c]/90 backdrop-blur-xl border border-b-0 border-black/5 dark:border-white/10 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.25)] flex items-stretch px-1.5 pt-2 relative"
           style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
         >
-          {NAV_ITEMS.slice(0, 2).map((item) => (
-            <NavButton key={item.key} item={item} active={page === item.key} onClick={() => onNavigate(item.key)} />
-          ))}
-          <div className="w-16 shrink-0" />
-          {NAV_ITEMS.slice(2).map((item) => (
-            <NavButton key={item.key} item={item} active={page === item.key} onClick={() => onNavigate(item.key)} />
-          ))}
+          <div className="flex-1 flex items-stretch">
+            {NAV_ITEMS.slice(0, 2).map((item) => (
+              <NavButton key={item.key} item={item} active={page === item.key} onClick={() => onNavigate(item.key)} />
+            ))}
+          </div>
+          <div className="w-[4.5rem] shrink-0" />
+          <div className="flex-1 flex items-stretch">
+            {NAV_ITEMS.slice(2).map((item) => (
+              <NavButton key={item.key} item={item} active={page === item.key} onClick={() => onNavigate(item.key)} />
+            ))}
+          </div>
         </div>
         <div className="absolute inset-x-0 -top-8 flex justify-center pointer-events-none">
           <motion.button
             whileTap={{ scale: 0.92 }}
             onClick={() => setAddOpen(true)}
-            className="pointer-events-auto h-16 w-16 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-500/40"
+            className="pointer-events-auto h-[4.5rem] w-[4.5rem] rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-500/40"
             aria-label="Добавить операцию"
           >
-            <PlusIcon className="h-7 w-7" />
+            <PlusIcon className="h-8 w-8" />
           </motion.button>
         </div>
       </div>
