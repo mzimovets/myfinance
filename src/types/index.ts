@@ -23,13 +23,19 @@ export interface Transaction {
 
 export type SalaryPeriodicity = 'monthly' | 'biweekly' | 'weekly'
 
+export interface SalaryPart {
+  id: string
+  label: string // e.g. "Аванс", "Зарплата"
+  amount: number
+  payDay: number // day of month (1-31) for monthly; day of week (0-6) for weekly/biweekly
+  periodicity: SalaryPeriodicity
+}
+
 export interface SalarySettings {
   id: 'salary'
   enabled: boolean
-  amount: number
-  payDay: number // day of month (1-31) for monthly; day of week (0-6) for weekly
-  periodicity: SalaryPeriodicity
   categoryId: string
+  parts: SalaryPart[]
 }
 
 export interface Goal {

@@ -58,7 +58,12 @@ export default function DashboardPage({ onNavigate }: { onNavigate: (p: PageKey)
 
       <div className="grid grid-cols-2 gap-3">
         <StatCard label="Остаток за месяц" value={formatRub(stats.net)} tone={stats.net >= 0 ? 'positive' : 'negative'} icon="💡" />
-        <StatCard label="Зарплата" value={salary.enabled ? formatRub(salary.amount) : '—'} sub={salary.enabled ? `${salary.payDay} числа` : 'Не настроена'} icon="💼" />
+        <StatCard
+          label="Зарплата"
+          value={salary.enabled && salary.parts.length > 0 ? formatRub(salary.parts.reduce((acc, p) => acc + p.amount, 0)) : '—'}
+          sub={salary.enabled && salary.parts.length > 0 ? salary.parts.map((p) => `${p.label} ${p.payDay} ч.`).join(', ') : 'Не настроена'}
+          icon="💼"
+        />
         <StatCard
           label="Накопления"
           value={formatRub(totalSavings)}

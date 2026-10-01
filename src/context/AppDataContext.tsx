@@ -47,7 +47,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     goals: [],
     piggyBanks: [],
     budgets: [],
-    salary: { id: 'salary', enabled: false, amount: 0, payDay: 5, periodicity: 'monthly', categoryId: 'inc-salary' },
+    salary: { id: 'salary', enabled: false, categoryId: 'inc-salary', parts: [] },
     appSettings: { id: 'app', theme: 'system', currency: 'RUB', onboarded: false },
   })
 

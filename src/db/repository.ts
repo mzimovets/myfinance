@@ -1,7 +1,7 @@
 import { getDB } from './database'
 import { DEFAULT_CATEGORIES } from './defaultCategories'
 import { computeMissingSalaryOccurrences } from '../utils/salaryAutomation'
-import type { AppSettings, Budget, Category, Goal, PiggyBank, SalarySettings, Transaction } from '../types'
+import type { AppSettings, Budget, Category, Goal, PiggyBank, SalaryPart, SalarySettings, Transaction } from '../types'
 
 function uid(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`
@@ -24,12 +24,33 @@ export async function ensureSeeded(): Promise<void> {
     await db.put('settings', {
       id: 'salary',
       enabled: false,
-      amount: 0,
-      payDay: 5,
-      periodicity: 'monthly',
       categoryId: 'inc-salary',
+      parts: [],
     } satisfies SalarySettings)
   }
+}
+
+function uidPart(): string {
+  return `part-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+}
+
+// Migrates the pre-multi-part salary shape ({ amount, payDay, periodicity })
+// into a single-entry `parts` array so older stored data keeps working.
+function migrateSalarySettings(raw: unknown): SalarySettings {
+  const s = raw as Partial<SalarySettings> & { amount?: number; payDay?: number; periodicity?: SalaryPart['periodicity'] }
+  if (!s) return { id: 'salary', enabled: false, categoryId: 'inc-salary', parts: [] }
+  if (Array.isArray(s.parts)) return s as SalarySettings
+  if (typeof s.amount === 'number') {
+    const part: SalaryPart = {
+      id: uidPart(),
+      label: 'Зарплата',
+      amount: s.amount,
+      payDay: s.payDay ?? 5,
+      periodicity: s.periodicity ?? 'monthly',
+    }
+    return { id: 'salary', enabled: s.enabled ?? false, categoryId: s.categoryId ?? 'inc-salary', parts: s.amount > 0 ? [part] : [] }
+  }
+  return { id: 'salary', enabled: s.enabled ?? false, categoryId: s.categoryId ?? 'inc-salary', parts: [] }
 }
 
 // ---------- Transactions ----------
@@ -167,7 +188,7 @@ export async function deleteBudget(id: string): Promise<void> {
 export async function getSalarySettings(): Promise<SalarySettings> {
   const db = await getDB()
   const s = await db.get('settings', 'salary')
-  return (s as SalarySettings) ?? { id: 'salary', enabled: false, amount: 0, payDay: 5, periodicity: 'monthly', categoryId: 'inc-salary' }
+  return migrateSalarySettings(s)
 }
 
 export async function setSalarySettings(settings: SalarySettings): Promise<void> {
@@ -196,14 +217,14 @@ export async function syncSalaryIncome(): Promise<void> {
   const tx = db.transaction('transactions', 'readwrite')
   const now = Date.now()
   await Promise.all(
-    missing.map((m, i) =>
+    missing.map((m) =>
       tx.store.put({
-        id: `salary-${m.date}-${now}-${i}`,
+        id: m.id,
         type: 'income',
-        amount: salary.amount,
+        amount: m.amount,
         categoryId: salary.categoryId,
         date: m.date,
-        description: 'Зарплата (автоматически)',
+        description: `${m.label} (автоматически)`,
         createdAt: now,
         updatedAt: now,
       } satisfies Transaction),
