@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Modal, ModalContent, ModalBody, ModalHeader, Input, Textarea, Button, Select, SelectItem } from '@heroui/react'
+import { Drawer, DrawerContent, DrawerBody, DrawerHeader, Input, Textarea, Button, Select, SelectItem } from '@heroui/react'
 import { motion } from 'framer-motion'
 import { useAppData } from '../../context/AppDataContext'
 import type { Transaction, TransactionType } from '../../types'
@@ -176,10 +176,10 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} placement="bottom-center" size="md" scrollBehavior="inside" classNames={{ wrapper: 'items-end sm:items-center' }}>
-      <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">{editingTransaction ? 'Редактировать операцию' : 'Новая операция'}</ModalHeader>
-        <ModalBody className="pb-6">
+    <Drawer isOpen={isOpen} onClose={onClose} placement="bottom" size="lg" radius="lg">
+      <DrawerContent>
+        <DrawerHeader className="flex flex-col gap-1">{editingTransaction ? 'Редактировать операцию' : 'Новая операция'}</DrawerHeader>
+        <DrawerBody className="pb-6">
           <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-100 dark:bg-white/5">
             {(['expense', 'income'] as TransactionType[]).map((t) => (
               <button
@@ -379,8 +379,8 @@ export default function AddTransactionModal({ isOpen, onClose, editingTransactio
               Сохранить
             </Button>
           </div>
-        </ModalBody>
-      </ModalContent>
-    </Modal>
+        </DrawerBody>
+      </DrawerContent>
+    </Drawer>
   )
 }

@@ -79,23 +79,25 @@ export default function AppShell({
       {/* Mobile bottom nav */}
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40">
         <div
-          className="mx-3 rounded-t-3xl bg-white/90 dark:bg-[#12131c]/90 backdrop-blur-xl border border-b-0 border-black/5 dark:border-white/10 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.25)] flex items-center justify-between px-2 pt-2 relative"
+          className="mx-3 rounded-t-3xl bg-white/90 dark:bg-[#12131c]/90 backdrop-blur-xl border border-b-0 border-black/5 dark:border-white/10 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.25)] flex items-stretch px-1.5 pt-2 relative"
           style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
         >
           {NAV_ITEMS.slice(0, 2).map((item) => (
             <NavButton key={item.key} item={item} active={page === item.key} onClick={() => onNavigate(item.key)} />
           ))}
-          <div className="w-14" />
+          <div className="w-16 shrink-0" />
           {NAV_ITEMS.slice(2).map((item) => (
             <NavButton key={item.key} item={item} active={page === item.key} onClick={() => onNavigate(item.key)} />
           ))}
+        </div>
+        <div className="absolute inset-x-0 -top-8 flex justify-center pointer-events-none">
           <motion.button
-            whileTap={{ scale: 0.9 }}
+            whileTap={{ scale: 0.92 }}
             onClick={() => setAddOpen(true)}
-            className="absolute left-1/2 -translate-x-1/2 -top-6 h-14 w-14 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-500/40"
+            className="pointer-events-auto h-16 w-16 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-500/40"
             aria-label="Добавить операцию"
           >
-            <PlusIcon className="h-6 w-6" />
+            <PlusIcon className="h-7 w-7" />
           </motion.button>
         </div>
       </div>
@@ -107,11 +109,16 @@ export default function AppShell({
 
 function NavButton({ item, active, onClick }: { item: NavItem; active: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-[9px] tracking-tight font-medium whitespace-nowrap ${active ? 'text-brand-600 dark:text-brand-300' : 'text-slate-400'}`}>
+    <button
+      onClick={onClick}
+      className={`relative flex-1 basis-0 flex flex-col items-center justify-center gap-0.5 py-1.5 text-[9px] tracking-tight font-medium whitespace-nowrap ${
+        active ? 'text-brand-600 dark:text-brand-300' : 'text-slate-400'
+      }`}
+    >
       {active && (
         <motion.div
           layoutId="nav-pill-mobile"
-          className="absolute inset-0 rounded-xl bg-brand-500/10"
+          className="absolute inset-y-0.5 inset-x-1 rounded-2xl bg-brand-500/10"
           transition={{ type: 'spring', stiffness: 400, damping: 32 }}
         />
       )}
